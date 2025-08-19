@@ -1,4 +1,8 @@
-[package]
+[workspace]
+resolver = "3"
+members = ["src/*"]
+
+[workspace.package]
 name = "ratatui-playground"
 version = "0.1.0"
 description = "A playground workspace for ratatui"
@@ -6,7 +10,7 @@ authors = ["JasterV <49537445+JasterV@users.noreply.github.com>"]
 license = "MIT"
 edition = "2024"
 
-[dependencies]
+[workspace.dependencies]
 color-eyre = "0.6.3"
 crossterm = "0.29.0"
 ratatui = "0.29.0"

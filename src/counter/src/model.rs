@@ -27,10 +27,7 @@ impl Model {
     }
 }
 
-pub enum Effect {
-    Stop,
-    Continue,
-}
+pub enum Effect {}
 
 pub enum Message {
     IncCounter,

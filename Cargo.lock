@@ -122,6 +122,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "counter"
+version = "0.1.0"
+dependencies = [
+ "color-eyre",
+ "crossterm 0.29.0",
+ "framework",
+ "ratatui",
+]
+
+[[package]]
 name = "crossterm"
 version = "0.28.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -272,6 +282,15 @@ name = "foldhash"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d9c4f5dac5e15c24eb999c26181a6ca40b39fe946cbe4c263c7209467bc83af2"
+
+[[package]]
+name = "framework"
+version = "0.1.0"
+dependencies = [
+ "color-eyre",
+ "crossterm 0.29.0",
+ "ratatui",
+]
 
 [[package]]
 name = "gimli"
@@ -517,15 +536,6 @@ dependencies = [
  "unicode-segmentation",
  "unicode-truncate",
  "unicode-width 0.2.0",
-]
-
-[[package]]
-name = "ratatui-playground"
-version = "0.1.0"
-dependencies = [
- "color-eyre",
- "crossterm 0.29.0",
- "ratatui",
 ]
 
 [[package]]

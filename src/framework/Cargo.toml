@@ -1,0 +1,11 @@
+[package]
+name = "framework"
+publish = false
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+color-eyre.workspace = true
+crossterm.workspace = true
+ratatui = { workspace = true, features = ["unstable-widget-ref"] }
