@@ -1,4 +1,6 @@
-# Ratatui Elm
+# TeaTui
+
+> Tea = The Elm Architecture
 
 This is an experimental project that aims to build an Elm-like framework for TUI development in Rust on top of [Ratatui](https://github.com/ratatui/ratatui).
 
@@ -9,9 +11,6 @@ The provided templates from the Ratatui official sources write code in a very pr
 I want to minimize the usage of mutability and build the most pure functional TUI apps that I can.
 
 I feel that Elm has always been a great example to follow when it comes to building frontend in a pure-functional style, and so I will try to reproduce it in here.
-
-
-
 
 ## How does it work
 
@@ -45,7 +44,7 @@ The users of this framework only need to provide:
 
 ### Examples
 
-You can find a folder with example projects in the [examples](https://github.com/JasterV/ratatui-elm/tree/main/examples) folder.
+You can find a folder with example projects in the [examples](https://github.com/JasterV/teatui/tree/main/examples) folder.
 
 ## License
 

@@ -1,5 +1,5 @@
 [package]
-name = "ratatui-elm"
+name = "teatui"
 version = "0.1.0"
 description = "An elm-like abstraction over Ratatui"
 license.workspace = true

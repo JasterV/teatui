@@ -25,8 +25,8 @@ jobs:
       - name: Update crate version
         id: update-version
         run: |
-          cargo set-version -p ratatui-elm $GITHUB_REF_NAME
+          cargo set-version -p teatui $GITHUB_REF_NAME
       - name: Publish crate
         run: |
           # Publish the crate using the updated version from the previous step
-          cargo publish -p ratatui-elm --token ${{ secrets.CRATES_IO_TOKEN }}
+          cargo publish -p teatui --token ${{ secrets.CRATES_IO_TOKEN }}

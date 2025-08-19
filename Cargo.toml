@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["ratatui-elm", "examples/*"]
+members = ["teatui", "examples/*"]
 
 [workspace.package]
 authors = ["JasterV <49537445+JasterV@users.noreply.github.com>"]

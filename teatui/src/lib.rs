@@ -30,7 +30,7 @@
 //!
 //! ### Examples
 //!
-//! You can find a folder with example projects in the [examples](https://github.com/JasterV/ratatui-elm/tree/main/examples) folder.
+//! You can find a folder with example projects in the [examples](https://github.com/JasterV/teatui/tree/main/examples) folder.
 use color_eyre::Report;
 use color_eyre::Result;
 use std::{

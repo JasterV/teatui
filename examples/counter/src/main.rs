@@ -5,11 +5,11 @@ use ratatui::{
     text::Line,
     widgets::{Block, Paragraph},
 };
-use ratatui_elm::{Update, View};
+use teatui::{Update, View};
 
 fn main() -> Result<()> {
     color_eyre::install()?;
-    let result = ratatui_elm::start(Model::default(), update, view, run_effects);
+    let result = teatui::start(Model::default(), update, view, run_effects);
     result
 }
 
