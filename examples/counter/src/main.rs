@@ -1,9 +1,19 @@
-//! Elm-like model module.
-//!
-//! Defines the state of the application, the messages that can be received
-//! from the outside world and the effects that can be produced.
+use color_eyre::Result;
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
+use ratatui::{
+    style::Stylize,
+    text::Line,
+    widgets::{Block, Paragraph},
+};
+use ratatui_elm::{Update, View};
 
+fn main() -> Result<()> {
+    color_eyre::install()?;
+    let result = ratatui_elm::start(Model::default(), update, view, run_effects);
+    result
+}
+
+/// Defines the state of the application
 #[derive(Debug, Clone, Default)]
 pub struct Model {
     pub counter: u64,
@@ -27,8 +37,10 @@ impl Model {
     }
 }
 
+/// Possible side effects to execute
 pub enum Effect {}
 
+/// Messages that represent a change of state in the application
 pub enum Message {
     IncCounter,
     DecCounter,
@@ -75,4 +87,47 @@ impl From<crossterm::event::Event> for Message {
             | Event::Resize(_, _) => Self::NoOp,
         }
     }
+}
+
+/// Elm-like update function.
+///
+/// Given the current state (model) and an incoming message from the outside world,
+/// return the next updated state
+pub fn update(model: Model, msg: Message) -> Result<Update<Model, Effect>> {
+    match msg {
+        Message::Exit => Ok(Update::Exit),
+        Message::NoOp => Ok(Update::Next(model)),
+        Message::IncCounter => Ok(Update::Next(Model::increment_counter(model))),
+        Message::DecCounter => Ok(Update::Next(Model::decrement_counter(model))),
+    }
+}
+
+pub fn run_effects(_model: &Model, _effect: Effect) -> Result<Option<Message>> {
+    Ok(None)
+}
+
+/// Elm-like View function.
+///
+/// Given the current state (read-only), return a drawable widget.
+pub fn view(model: &Model) -> Result<View> {
+    let counter = model.counter;
+
+    let title = Line::from("Ratatui Actor-based Counter")
+        .bold()
+        .blue()
+        .centered();
+
+    let text = format!(
+        r#"Counter TUI!
+        
+Counter: {counter}
+        
+Press `Esc`, `Ctrl-C` or `q` to stop running."#
+    );
+
+    let widget = Paragraph::new(text)
+        .block(Block::bordered().title(title))
+        .centered();
+
+    Ok(View::new(widget))
 }

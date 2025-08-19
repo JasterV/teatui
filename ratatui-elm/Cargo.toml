@@ -1,0 +1,12 @@
+[package]
+name = "ratatui-elm"
+version = "0.1.0"
+description = "An elm-like abstraction over Ratatui"
+license.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+color-eyre.workspace = true
+crossterm.workspace = true
+ratatui.workspace = true
