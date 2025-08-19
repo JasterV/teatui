@@ -25,13 +25,8 @@ jobs:
       - name: Update crate version
         id: update-version
         run: |
-          # Get the release tag (e.g., v1.2.3) and strip the 'v' prefix
-          RELEASE_TAG="${{ github.ref }}"
-          VERSION=${RELEASE_TAG#refs/tags/v}
-
-          # Use cargo-edit to update the version of the ratatui-elm package
-          cargo set-version --package ratatui-elm $VERSION
+          cargo set-version -p ratatui-elm $GITHUB_REF_NAME
       - name: Publish crate
         run: |
           # Publish the crate using the updated version from the previous step
-          cargo publish --package ratatui-elm --token ${{ secrets.CRATES_IO_TOKEN }}
+          cargo publish -p ratatui-elm --token ${{ secrets.CRATES_IO_TOKEN }}
