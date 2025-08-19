@@ -1,9 +1,13 @@
-// Actor responsible of processing side effects sent by the update actor.
+//! Actor responsible of processing side effects sent by the update actor.
 use color_eyre::Result;
 use std::sync::mpsc::Receiver;
 use std::sync::mpsc::Sender;
 
-pub fn run<M, Msg, Eff, F>(effects_fn: F, rx: Receiver<(M, Eff)>, tx: Sender<Msg>) -> Result<()>
+pub(crate) fn run<M, Msg, Eff, F>(
+    effects_fn: F,
+    rx: Receiver<(M, Eff)>,
+    tx: Sender<Msg>,
+) -> Result<()>
 where
     Msg: Send + Sync + 'static,
     F: Fn(&M, Eff) -> Result<Option<Msg>>,

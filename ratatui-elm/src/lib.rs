@@ -1,4 +1,4 @@
-//! Elm-like framework based on Ratatui.
+//! Elm-like framework implemented on top of [Ratatui](https://github.com/ratatui/ratatui).
 //!
 //! The state of your application is represented by a single type called the Model.
 //!
@@ -22,15 +22,22 @@
 //! The users of this framework only need to provide:
 //!
 //! - An update function that given a model and a message return an `Update` instance.
+//!
 //! - A view function that given a reference to the model, returns a `View`
+//!
 //! - An effects function that given a reference to the model and an effect,
 //!   might perform any side effects and optionally return a message to update the state of the application
+//!
+//! ### Examples
+//!
+//! You can find a folder with example projects in the [examples](https://github.com/JasterV/ratatui-elm/tree/main/examples) folder.
 use color_eyre::Report;
 use color_eyre::Result;
 use std::{
     sync::mpsc::{Sender, channel},
     thread,
 };
+
 pub use update::Update;
 pub use view::View;
 
@@ -39,6 +46,18 @@ mod events;
 mod update;
 mod view;
 
+/// Starts the runtime which manages all the internal
+/// processes and message passing.
+///
+/// The user needs to provide:
+///
+/// - The initial model
+///
+/// - An `update` function, responsible for updating the model based on messages.
+///
+/// - A `view` function, responsible for constructing the view from the model.
+///
+/// - An `effects` function responsible for handling side effects.
 pub fn start<M, Msg, Eff, UF, VF, EF>(
     model: M,
     update_fn: UF,

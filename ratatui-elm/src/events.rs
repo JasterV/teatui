@@ -3,7 +3,7 @@ use color_eyre::Result;
 use crossterm::event;
 use std::sync::mpsc::Sender;
 
-pub fn run<M>(tx: Sender<M>) -> Result<()>
+pub(crate) fn run<M>(tx: Sender<M>) -> Result<()>
 where
     M: From<crossterm::event::Event> + Sync + Send + 'static,
 {

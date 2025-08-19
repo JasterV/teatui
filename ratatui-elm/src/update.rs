@@ -2,13 +2,20 @@
 use color_eyre::{Report, Result};
 use std::sync::mpsc::{Receiver, Sender};
 
+/// Tells the runtime what to do with the previous message.
+///
+/// If `Update::Exit` is returned, the program will exit.
+///
+/// If `Update::Next(M)` is returned, the view will be rendered with the new model.
+///
+/// If `Update::NextWithEffect` is returned, the view will be rendered with the new model and a side effect will be executed.
 pub enum Update<M, E> {
     Exit,
     Next(M),
     NextWithEffect(M, E),
 }
 
-pub fn run<M, Msg, Eff, F>(
+pub(crate) fn run<M, Msg, Eff, F>(
     mut model: M,
     update_fn: F,
     rx: Receiver<Msg>,
@@ -33,12 +40,14 @@ where
             Update::NextWithEffect(new_model, effect) => (new_model, Some(effect)),
         };
 
+        // Send the new model to the view
+        view_tx.send(new_model.clone())?;
+
+        // After the view is notified of the new model,
+        // execute side effects if any
         if let Some(effect) = effect {
             effects_tx.send((new_model.clone(), effect))?;
         }
-
-        // Send the updated version of the model
-        view_tx.send(new_model.clone())?;
 
         model = new_model;
     }
