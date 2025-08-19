@@ -29,4 +29,4 @@ jobs:
       - name: Publish crate
         run: |
           # Publish the crate using the updated version from the previous step
-          cargo publish -p teatui --token ${{ secrets.CRATES_IO_TOKEN }}
+          cargo publish -p teatui --allow-dirty --token ${{ secrets.CRATES_IO_TOKEN }}
