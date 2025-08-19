@@ -1,7 +1,30 @@
-//! This library implements an Elm-like framework based on Ratatui
-//! That will allow the users to build TUI applications by just providing
-//! an Update function, a View function, a terminal and a model.
+//! Elm-like framework based on Ratatui.
 //!
+//! The state of your application is represented by a single type called the Model.
+//!
+//! The Model will be used by a `view` process to render a View.
+//!
+//! A separate process will read events from the outside world and
+//! send them to an `update` process.
+//!
+//! The `update` process will take the model and an event and
+//! return a new model, potentially also returning a side effect.
+//!
+//! The updated model will be sent to the `view`, triggering a new render
+//! based on the new state of the application.
+//!
+//! If any side effects are returned from `update`, they will be processed
+//! in a separate process.
+//!
+//! If the process responsible for handling side effects wants to update
+//! the state of the application, it will send a message to the `update` process.
+//!
+//! The users of this framework only need to provide:
+//!
+//! - An update function that given a model and a message return an `Update` instance.
+//! - A view function that given a reference to the model, returns a `View`
+//! - An effects function that given a reference to the model and an effect,
+//!   might perform any side effects and optionally return a message to update the state of the application
 use color_eyre::Report;
 use color_eyre::Result;
 use std::{

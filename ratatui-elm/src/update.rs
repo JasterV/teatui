@@ -1,5 +1,4 @@
 //! Actor responsible of maintaining the state of the application.
-//! Other actors can query the state of the model or send updates.
 use color_eyre::{Report, Result};
 use std::sync::mpsc::{Receiver, Sender};
 
