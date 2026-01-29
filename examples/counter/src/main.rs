@@ -101,14 +101,14 @@ pub fn update(model: Model, msg: Message) -> Update<Model, Effect> {
     }
 }
 
-pub fn run_effects(_model: &Model, _effect: Effect) -> Option<Message> {
+pub fn run_effects(_model: Model, _effect: Effect) -> Option<Message> {
     None
 }
 
 /// Elm-like View function.
 ///
 /// Given the current state (read-only), return a drawable widget.
-pub fn view(model: &Model) -> Paragraph<'static> {
+pub fn view(model: Model) -> Paragraph<'static> {
     let counter = model.counter;
 
     let title = Line::from("Ratatui Actor-based Counter")

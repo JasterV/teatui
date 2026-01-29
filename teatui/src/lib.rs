@@ -87,8 +87,8 @@ where
     W: Widget,
     IF: Fn() -> (M, Option<Eff>) + Send + Sync + 'static,
     UF: Fn(M, Msg) -> Update<M, Eff> + Send + Sync + 'static,
-    VF: Fn(&M) -> W + Send + Sync + 'static,
-    EF: Fn(&M, Eff) -> Option<Msg> + Send + Sync + 'static,
+    VF: Fn(M) -> W + Send + Sync + 'static,
+    EF: Fn(M, Eff) -> Option<Msg> + Send + Sync + 'static,
 {
     run_program(init_fn, update_fn, view_fn, move |effects_rx, update_tx| {
         effects::run(effects_fn, effects_rx, update_tx)
@@ -110,8 +110,8 @@ where
     W: Widget,
     IF: Fn() -> (M, Option<Eff>) + Send + Sync + 'static,
     UF: Fn(M, Msg) -> Update<M, Eff> + Send + Sync + 'static,
-    VF: Fn(&M) -> W + Send + Sync + 'static,
-    EF: Fn(&M, Eff) -> Fut + Send + Sync + 'static,
+    VF: Fn(M) -> W + Send + Sync + 'static,
+    EF: Fn(M, Eff) -> Fut + Send + Sync + 'static,
     Fut: std::future::Future<Output = Option<Msg>> + Send,
 {
     run_program(init_fn, update_fn, view_fn, move |effects_rx, update_tx| {
@@ -133,7 +133,7 @@ where
     W: Widget,
     IF: Fn() -> (M, Option<Eff>) + Send + Sync + 'static,
     UF: Fn(M, Msg) -> Update<M, Eff> + Send + Sync + 'static,
-    VF: Fn(&M) -> W + Send + Sync + 'static,
+    VF: Fn(M) -> W + Send + Sync + 'static,
     SF: FnOnce(
             std::sync::mpsc::Receiver<(M, Eff)>,
             std::sync::mpsc::Sender<Msg>,

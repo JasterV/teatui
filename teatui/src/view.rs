@@ -17,10 +17,10 @@ pub(crate) fn run<M, F, W>(
 ) -> Result<(), ViewError>
 where
     W: Widget,
-    F: Fn(&M) -> W,
+    F: Fn(M) -> W,
 {
     loop {
-        let widget = view_fn(&model);
+        let widget = view_fn(model);
 
         terminal.draw(|frame| frame.render_widget(widget, frame.area()))?;
 

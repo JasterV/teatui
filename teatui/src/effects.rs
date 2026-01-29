@@ -18,14 +18,14 @@ pub(crate) fn run<M, Msg, Eff, F>(
 ) -> Result<(), EffectsError<Msg>>
 where
     Msg: Send + Sync + 'static,
-    F: Fn(&M, Eff) -> Option<Msg>,
+    F: Fn(M, Eff) -> Option<Msg>,
 {
     loop {
         let Ok((model, effect)) = rx.recv() else {
             return Ok(());
         };
 
-        if let Some(msg) = effects_fn(&model, effect) {
+        if let Some(msg) = effects_fn(model, effect) {
             tx.send(msg)?;
         }
     }
@@ -42,7 +42,7 @@ where
     Msg: Send + Sync + 'static,
     Eff: Send + Sync + 'static,
     Fut: Future<Output = Option<Msg>> + Send,
-    F: Fn(&M, Eff) -> Fut + Send + Sync + 'static,
+    F: Fn(M, Eff) -> Fut + Send + Sync + 'static,
 {
     let rt = tokio::runtime::Builder::new_current_thread()
         .enable_all()
@@ -56,7 +56,7 @@ where
             };
 
             // We spawn the effect in the tokio reactor so they can run concurrently
-            let fut = effects_fn(&model, effect);
+            let fut = effects_fn(model, effect);
 
             if let Some(msg) = fut.await {
                 let _ = tx.send(msg);
