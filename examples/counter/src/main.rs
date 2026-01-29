@@ -4,9 +4,9 @@ use ratatui::{
     text::Line,
     widgets::{Block, Paragraph},
 };
-use teatui::Update;
+use teatui::{ProgramError, update::Update};
 
-fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+fn main() -> Result<(), ProgramError<Model, Message, Effect>> {
     teatui::start(|| (Model::default(), None), update, view, run_effects)
 }
 

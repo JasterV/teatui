@@ -31,25 +31,18 @@
 //! ### Examples
 //!
 //! You can find a folder with example projects in the [examples](https://github.com/JasterV/teatui/tree/main/examples) folder.
+use effects::EffectsError;
+use events::EventLoopError;
 use ratatui::widgets::Widget;
 use std::fmt::Debug;
-use std::sync::mpsc::SendError;
-use std::{
-    sync::mpsc::{Sender, channel},
-    thread,
-};
+use std::{sync::mpsc::channel, thread};
+use update::{Update, UpdateError};
+use view::ViewError;
 
-pub use update::Update;
-
-use crate::effects::EffectsError;
-use crate::events::EventLoopError;
-use crate::update::UpdateError;
-use crate::view::ViewError;
-
-mod effects;
-mod events;
-mod update;
-mod view;
+pub mod effects;
+pub mod events;
+pub mod update;
+pub mod view;
 
 #[derive(thiserror::Error, Debug)]
 pub enum ProgramError<M, Msg, Eff>
@@ -98,8 +91,6 @@ where
 {
     let terminal = ratatui::init();
 
-    let (model, effect) = init_fn();
-
     // Channel for signaling when a task completes
     let (shutdown_tx, shutdown_rx) = channel::<Result<(), ProgramError<M, Msg, Eff>>>();
 
@@ -112,7 +103,8 @@ where
     // If the view actor is started after the update actor, it could happen
     // that both actors have an out of sync version of the model for a bit.
     thread::spawn({
-        let model = model.clone();
+        let (model, _) = init_fn();
+
         let shutdown_tx = shutdown_tx.clone();
 
         move || {
@@ -125,6 +117,7 @@ where
 
     thread::spawn({
         let shutdown_tx = shutdown_tx.clone();
+        let (model, effect) = init_fn();
 
         move || {
             let result = update::run(model, effect, update_fn, update_rx, view_tx, effects_tx)
