@@ -9,7 +9,7 @@ use teatui::{Update, View};
 
 fn main() -> Result<()> {
     color_eyre::install()?;
-    let result = teatui::start(Model::default(), update, view, run_effects);
+    let result = teatui::start(|| (Model::default(), None), update, view, run_effects);
     result
 }
 
@@ -96,9 +96,9 @@ impl From<crossterm::event::Event> for Message {
 pub fn update(model: Model, msg: Message) -> Result<Update<Model, Effect>> {
     match msg {
         Message::Exit => Ok(Update::Exit),
-        Message::NoOp => Ok(Update::Next(model)),
-        Message::IncCounter => Ok(Update::Next(Model::increment_counter(model))),
-        Message::DecCounter => Ok(Update::Next(Model::decrement_counter(model))),
+        Message::NoOp => Ok(Update::Next(model, None)),
+        Message::IncCounter => Ok(Update::Next(Model::increment_counter(model), None)),
+        Message::DecCounter => Ok(Update::Next(Model::decrement_counter(model), None)),
     }
 }
 
