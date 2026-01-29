@@ -5,12 +5,11 @@ use ratatui::{
     text::Line,
     widgets::{Block, Paragraph},
 };
-use teatui::{Update, View};
+use teatui::Update;
 
 fn main() -> Result<()> {
     color_eyre::install()?;
-    let result = teatui::start(|| (Model::default(), None), update, view, run_effects);
-    result
+    teatui::start(|| (Model::default(), None), update, view, run_effects)
 }
 
 /// Defines the state of the application
@@ -109,7 +108,7 @@ pub fn run_effects(_model: &Model, _effect: Effect) -> Result<Option<Message>> {
 /// Elm-like View function.
 ///
 /// Given the current state (read-only), return a drawable widget.
-pub fn view(model: &Model) -> Result<View> {
+pub fn view(model: &Model) -> Result<Paragraph<'static>> {
     let counter = model.counter;
 
     let title = Line::from("Ratatui Actor-based Counter")
@@ -129,5 +128,5 @@ Press `Esc`, `Ctrl-C` or `q` to stop running."#
         .block(Block::bordered().title(title))
         .centered();
 
-    Ok(View::new(widget))
+    Ok(widget)
 }

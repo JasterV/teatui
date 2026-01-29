@@ -33,13 +33,13 @@
 //! You can find a folder with example projects in the [examples](https://github.com/JasterV/teatui/tree/main/examples) folder.
 use color_eyre::Report;
 use color_eyre::Result;
+use ratatui::widgets::Widget;
 use std::{
     sync::mpsc::{Sender, channel},
     thread,
 };
 
 pub use update::Update;
-pub use view::View;
 
 mod effects;
 mod events;
@@ -58,7 +58,7 @@ mod view;
 /// - A `view` function, responsible for constructing the view from the model.
 ///
 /// - An `effects` function responsible for handling side effects.
-pub fn start<M, Msg, Eff, IF, UF, VF, EF>(
+pub fn start<M, Msg, Eff, W, IF, UF, VF, EF>(
     init_fn: IF,
     update_fn: UF,
     view_fn: VF,
@@ -68,9 +68,10 @@ where
     M: Clone + Send + Sync + 'static,
     Eff: Send + Sync + 'static,
     Msg: From<crossterm::event::Event> + Sync + Send + 'static,
+    W: Widget,
     IF: Fn() -> (M, Option<Eff>) + Send + Sync + 'static,
     UF: Fn(M, Msg) -> Result<Update<M, Eff>> + Send + Sync + 'static,
-    VF: Fn(&M) -> Result<View> + Send + Sync + 'static,
+    VF: Fn(&M) -> Result<W> + Send + Sync + 'static,
     EF: Fn(&M, Eff) -> Result<Option<Msg>> + Send + Sync + 'static,
 {
     let terminal = ratatui::init();
