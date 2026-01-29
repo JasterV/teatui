@@ -1,6 +1,6 @@
 [package]
 name = "teatui"
-version = "0.2.0"
+version = "0.2.1"
 description = "An elm-like abstraction over Ratatui"
 license.workspace = true
 authors.workspace = true

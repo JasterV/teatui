@@ -4,8 +4,11 @@ members = ["teatui", "examples/*"]
 
 [workspace.package]
 authors = ["JasterV <49537445+JasterV@users.noreply.github.com>"]
-license = "MIT"
+description = "A pure functional framework to build TUIs build on top of ratatui"
 edition = "2024"
+homepage = "https://github.com/JasterV/teatui"
+license = "MIT"
+repository = "https://github.com/JasterV/teatui"
 
 [workspace.dependencies]
 crossterm = "0.29.0"
