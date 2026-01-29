@@ -1,5 +1,4 @@
 //! Actor responsible of rendering the model into the terminal.
-use color_eyre::Result;
 use ratatui::DefaultTerminal;
 use ratatui::widgets::Widget;
 use std::sync::mpsc::Receiver;
@@ -9,13 +8,13 @@ pub(crate) fn run<M, F, W>(
     mut terminal: DefaultTerminal,
     view_fn: F,
     rx: Receiver<M>,
-) -> Result<()>
+) -> Result<(), std::io::Error>
 where
     W: Widget,
-    F: Fn(&M) -> Result<W>,
+    F: Fn(&M) -> W,
 {
     loop {
-        let widget = view_fn(&model)?;
+        let widget = view_fn(&model);
 
         terminal.draw(|frame| frame.render_widget(widget, frame.area()))?;
 

@@ -8,6 +8,5 @@ license = "MIT"
 edition = "2024"
 
 [workspace.dependencies]
-color-eyre = "0.6.3"
 crossterm = "0.29.0"
 ratatui = { version = "0.30", features = ["unstable-widget-ref"] }

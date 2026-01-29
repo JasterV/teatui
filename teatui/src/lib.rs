@@ -31,9 +31,8 @@
 //! ### Examples
 //!
 //! You can find a folder with example projects in the [examples](https://github.com/JasterV/teatui/tree/main/examples) folder.
-use color_eyre::Report;
-use color_eyre::Result;
 use ratatui::widgets::Widget;
+use std::fmt::Debug;
 use std::{
     sync::mpsc::{Sender, channel},
     thread,
@@ -63,23 +62,23 @@ pub fn start<M, Msg, Eff, W, IF, UF, VF, EF>(
     update_fn: UF,
     view_fn: VF,
     effects_fn: EF,
-) -> Result<(), Report>
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>>
 where
-    M: Clone + Send + Sync + 'static,
-    Eff: Send + Sync + 'static,
-    Msg: From<crossterm::event::Event> + Sync + Send + 'static,
+    M: Clone + Debug + Send + Sync + 'static,
+    Eff: Debug + Send + Sync + 'static,
+    Msg: From<crossterm::event::Event> + Debug + Sync + Send + 'static,
     W: Widget,
     IF: Fn() -> (M, Option<Eff>) + Send + Sync + 'static,
-    UF: Fn(M, Msg) -> Result<Update<M, Eff>> + Send + Sync + 'static,
-    VF: Fn(&M) -> Result<W> + Send + Sync + 'static,
-    EF: Fn(&M, Eff) -> Result<Option<Msg>> + Send + Sync + 'static,
+    UF: Fn(M, Msg) -> Update<M, Eff> + Send + Sync + 'static,
+    VF: Fn(&M) -> W + Send + Sync + 'static,
+    EF: Fn(&M, Eff) -> Option<Msg> + Send + Sync + 'static,
 {
     let terminal = ratatui::init();
 
     let (model, effect) = init_fn();
 
     // Channel for signaling when a task completes
-    let (shutdown_tx, shutdown_rx) = channel::<Result<()>>();
+    let (shutdown_tx, shutdown_rx) = channel::<Result<(), _>>();
 
     // Channels for inter-thread communication
     let (update_tx, update_rx) = channel::<Msg>();
@@ -92,33 +91,42 @@ where
     //
     let model_1 = model.clone();
     spawn_thread(
-        || view::run(model_1, terminal, view_fn, view_rx),
+        || view::run(model_1, terminal, view_fn, view_rx).map_err(Box::from),
         shutdown_tx.clone(),
     );
 
     spawn_thread(
-        || update::run(model, effect, update_fn, update_rx, view_tx, effects_tx),
+        || update::run(model, effect, update_fn, update_rx, view_tx, effects_tx).map_err(Box::from),
         shutdown_tx.clone(),
     );
 
     let effects_update_tx = update_tx.clone();
     spawn_thread(
-        || effects::run(effects_fn, effects_rx, effects_update_tx),
+        || effects::run(effects_fn, effects_rx, effects_update_tx).map_err(Box::from),
         shutdown_tx.clone(),
     );
 
-    spawn_thread(|| events::run(update_tx), shutdown_tx.clone());
+    spawn_thread(
+        || events::run(update_tx).map_err(Box::from),
+        shutdown_tx.clone(),
+    );
 
-    let result = shutdown_rx.recv();
+    let result = shutdown_rx.recv().ok();
 
     ratatui::restore();
 
-    result?
+    match result {
+        Some(result) => result,
+        None => Ok(()),
+    }
 }
 
-fn spawn_thread<F>(callback: F, shutdown: Sender<Result<()>>) -> thread::JoinHandle<()>
+fn spawn_thread<F>(
+    callback: F,
+    shutdown: Sender<Result<(), Box<dyn std::error::Error + Send + Sync + 'static>>>,
+) -> thread::JoinHandle<()>
 where
-    F: FnOnce() -> Result<()>,
+    F: FnOnce() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>>,
     F: Send + 'static,
 {
     thread::spawn(move || {

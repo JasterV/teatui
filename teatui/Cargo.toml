@@ -7,6 +7,6 @@ authors.workspace = true
 edition.workspace = true
 
 [dependencies]
-color-eyre.workspace = true
 crossterm.workspace = true
 ratatui.workspace = true
+thiserror = "2"

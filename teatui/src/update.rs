@@ -1,6 +1,5 @@
 //! Actor responsible of maintaining the state of the application.
-use color_eyre::{Report, Result};
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::mpsc::{Receiver, SendError, Sender};
 
 /// Tells the runtime what to do with the previous message.
 ///
@@ -12,6 +11,17 @@ pub enum Update<M, E> {
     Next(M, Option<E>),
 }
 
+#[derive(thiserror::Error, Debug)]
+pub(crate) enum UpdateError<M, Eff>
+where
+    Eff: Send + Sync + 'static,
+{
+    #[error("Failed to send message to effects handler process")]
+    EffectSend(#[from] SendError<(M, Eff)>),
+    #[error("Failed to send message to the view process")]
+    ViewSend(#[from] SendError<M>),
+}
+
 pub(crate) fn run<M, Msg, Eff, F>(
     mut model: M,
     initial_effect: Option<Eff>,
@@ -19,9 +29,9 @@ pub(crate) fn run<M, Msg, Eff, F>(
     rx: Receiver<Msg>,
     view_tx: Sender<M>,
     effects_tx: Sender<(M, Eff)>,
-) -> Result<()>
+) -> Result<(), UpdateError<M, Eff>>
 where
-    F: Fn(M, Msg) -> Result<Update<M, Eff>, Report>,
+    F: Fn(M, Msg) -> Update<M, Eff>,
     Eff: Sync + Send + 'static,
     M: Clone + Sync + Send + 'static,
 {
@@ -34,7 +44,7 @@ where
             return Ok(());
         };
 
-        let update = update_fn(model, msg)?;
+        let update = update_fn(model, msg);
 
         let (new_model, effect) = match update {
             Update::Exit => return Ok(()),

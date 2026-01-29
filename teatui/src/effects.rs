@@ -1,23 +1,21 @@
 //! Actor responsible of processing side effects sent by the update actor.
-use color_eyre::Result;
-use std::sync::mpsc::Receiver;
-use std::sync::mpsc::Sender;
+use std::sync::mpsc::{Receiver, SendError, Sender};
 
 pub(crate) fn run<M, Msg, Eff, F>(
     effects_fn: F,
     rx: Receiver<(M, Eff)>,
     tx: Sender<Msg>,
-) -> Result<()>
+) -> Result<(), SendError<Msg>>
 where
     Msg: Send + Sync + 'static,
-    F: Fn(&M, Eff) -> Result<Option<Msg>>,
+    F: Fn(&M, Eff) -> Option<Msg>,
 {
     loop {
         let Ok((model, effect)) = rx.recv() else {
             return Ok(());
         };
 
-        if let Some(msg) = effects_fn(&model, effect)? {
+        if let Some(msg) = effects_fn(&model, effect) {
             tx.send(msg)?;
         }
     }
