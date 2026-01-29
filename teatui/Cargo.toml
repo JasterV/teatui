@@ -1,12 +1,17 @@
 [package]
 name = "teatui"
-version = "0.2.1"
+version = "0.3.0"
 description = "An elm-like abstraction over Ratatui"
 license.workspace = true
 authors.workspace = true
 edition.workspace = true
 
+[features]
+default = []
+tokio = ["dep:tokio"]
+
 [dependencies]
 crossterm.workspace = true
 ratatui.workspace = true
 thiserror = "2"
+tokio = { version = "1", features = ["full"], optional = true }

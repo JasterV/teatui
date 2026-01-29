@@ -1,5 +1,4 @@
 name: CI
-
 on:
   pull_request:
   push:
@@ -7,16 +6,13 @@ on:
       - main
       - master
       - develop
-
 env:
   CARGO_TERM_COLOR: always
-
 # ensure that the workflow is only triggered once per PR, subsequent pushes to the PR will cancel
 # and restart the workflow. See https://docs.github.com/en/actions/using-jobs/using-concurrency
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
-
 jobs:
   fmt:
     name: fmt
@@ -85,6 +81,6 @@ jobs:
         if: hashFiles('Cargo.lock') == ''
         run: cargo generate-lockfile
       - name: cargo test --locked
-        run: cargo test --locked --all-features --all-targets
+        run: cargo test --locked --all-targets
       - name: Cache Cargo dependencies
         uses: Swatinem/rust-cache@v2

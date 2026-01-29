@@ -73,6 +73,7 @@ where
 /// - A `view` function, responsible for constructing the view from the model.
 ///
 /// - An `effects` function responsible for handling side effects.
+#[cfg(not(feature = "tokio"))]
 pub fn start<M, Msg, Eff, W, IF, UF, VF, EF>(
     init_fn: IF,
     update_fn: UF,
@@ -89,66 +90,109 @@ where
     VF: Fn(&M) -> W + Send + Sync + 'static,
     EF: Fn(&M, Eff) -> Option<Msg> + Send + Sync + 'static,
 {
+    run_program(init_fn, update_fn, view_fn, move |effects_rx, update_tx| {
+        effects::run(effects_fn, effects_rx, update_tx)
+    })
+}
+
+/// Starts the runtime with asynchronous (Tokio) side effects.
+#[cfg(feature = "tokio")]
+pub fn start<M, Msg, Eff, W, IF, UF, VF, EF, Fut>(
+    init_fn: IF,
+    update_fn: UF,
+    view_fn: VF,
+    effects_fn: EF,
+) -> Result<(), ProgramError<M, Msg, Eff>>
+where
+    M: Clone + Send + Sync + 'static,
+    Eff: Debug + Send + Sync + 'static,
+    Msg: From<crossterm::event::Event> + Sync + Send + 'static,
+    W: Widget,
+    IF: Fn() -> (M, Option<Eff>) + Send + Sync + 'static,
+    UF: Fn(M, Msg) -> Update<M, Eff> + Send + Sync + 'static,
+    VF: Fn(&M) -> W + Send + Sync + 'static,
+    EF: Fn(&M, Eff) -> Fut + Send + Sync + 'static,
+    Fut: std::future::Future<Output = Option<Msg>> + Send,
+{
+    run_program(init_fn, update_fn, view_fn, move |effects_rx, update_tx| {
+        effects::run_async(effects_fn, effects_rx, update_tx)
+    })
+}
+
+/// Internal helper to abstract the common actor-spawning logic.
+fn run_program<M, Msg, Eff, W, IF, UF, VF, SF>(
+    init_fn: IF,
+    update_fn: UF,
+    view_fn: VF,
+    effects_fn: SF,
+) -> Result<(), ProgramError<M, Msg, Eff>>
+where
+    M: Clone + Send + Sync + 'static,
+    Eff: Debug + Send + Sync + 'static,
+    Msg: From<crossterm::event::Event> + Sync + Send + 'static,
+    W: Widget,
+    IF: Fn() -> (M, Option<Eff>) + Send + Sync + 'static,
+    UF: Fn(M, Msg) -> Update<M, Eff> + Send + Sync + 'static,
+    VF: Fn(&M) -> W + Send + Sync + 'static,
+    SF: FnOnce(
+            std::sync::mpsc::Receiver<(M, Eff)>,
+            std::sync::mpsc::Sender<Msg>,
+        ) -> Result<(), EffectsError<Msg>>
+        + Send
+        + Sync
+        + 'static,
+{
     let terminal = ratatui::init();
 
-    // Channel for signaling when a task completes
     let (shutdown_tx, shutdown_rx) = channel::<Result<(), ProgramError<M, Msg, Eff>>>();
-
-    // Channels for inter-thread communication
     let (update_tx, update_rx) = channel::<Msg>();
     let (view_tx, view_rx) = channel::<M>();
     let (effects_tx, effects_rx) = channel::<(M, Eff)>();
 
-    // Spawn order is important.
-    // If the view actor is started after the update actor, it could happen
-    // that both actors have an out of sync version of the model for a bit.
+    // Spawn View Actor
     thread::spawn({
         let (model, _) = init_fn();
-
         let shutdown_tx = shutdown_tx.clone();
-
         move || {
-            let result = view::run(model, terminal, view_fn, view_rx)
-                .map_err(|err| ProgramError::ViewError(err));
-
+            let result =
+                view::run(model, terminal, view_fn, view_rx).map_err(ProgramError::ViewError);
             let _ = shutdown_tx.send(result);
         }
     });
 
+    // Spawn Update Actor
     thread::spawn({
         let shutdown_tx = shutdown_tx.clone();
         let (model, effect) = init_fn();
-
         move || {
             let result = update::run(model, effect, update_fn, update_rx, view_tx, effects_tx)
-                .map_err(|err| ProgramError::UpdateError(err));
-
+                .map_err(ProgramError::UpdateError);
             let _ = shutdown_tx.send(result);
         }
     });
 
+    // Spawn Effects Actor
     thread::spawn({
+        let shutdown_tx = shutdown_tx.clone();
         let update_tx = update_tx.clone();
-        let shutdown_tx = shutdown_tx.clone();
+
         move || {
-            let result = effects::run(effects_fn, effects_rx, update_tx)
-                .map_err(|err| ProgramError::EffectsError(err));
+            let result = effects_fn(effects_rx, update_tx).map_err(ProgramError::EffectsError);
 
             let _ = shutdown_tx.send(result);
         }
     });
 
+    // Spawn Events Actor
     thread::spawn({
         let shutdown_tx = shutdown_tx.clone();
-
         move || {
-            let result = events::run(update_tx).map_err(|err| ProgramError::EventLoopError(err));
+            let result = events::run(update_tx).map_err(ProgramError::EventLoopError);
             let _ = shutdown_tx.send(result);
         }
     });
 
     let result = shutdown_rx.recv().ok();
-
     ratatui::restore();
 
     match result {
