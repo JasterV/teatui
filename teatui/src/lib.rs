@@ -58,8 +58,8 @@ mod view;
 /// - A `view` function, responsible for constructing the view from the model.
 ///
 /// - An `effects` function responsible for handling side effects.
-pub fn start<M, Msg, Eff, UF, VF, EF>(
-    model: M,
+pub fn start<M, Msg, Eff, IF, UF, VF, EF>(
+    init_fn: IF,
     update_fn: UF,
     view_fn: VF,
     effects_fn: EF,
@@ -68,11 +68,14 @@ where
     M: Clone + Send + Sync + 'static,
     Eff: Send + Sync + 'static,
     Msg: From<crossterm::event::Event> + Sync + Send + 'static,
+    IF: Fn() -> (M, Option<Eff>) + Send + Sync + 'static,
     UF: Fn(M, Msg) -> Result<Update<M, Eff>> + Send + Sync + 'static,
     VF: Fn(&M) -> Result<View> + Send + Sync + 'static,
     EF: Fn(&M, Eff) -> Result<Option<Msg>> + Send + Sync + 'static,
 {
     let terminal = ratatui::init();
+
+    let (model, effect) = init_fn();
 
     // Channel for signaling when a task completes
     let (shutdown_tx, shutdown_rx) = channel::<Result<()>>();
@@ -93,7 +96,7 @@ where
     );
 
     spawn_thread(
-        || update::run(model, update_fn, update_rx, view_tx, effects_tx),
+        || update::run(model, effect, update_fn, update_rx, view_tx, effects_tx),
         shutdown_tx.clone(),
     );
 
