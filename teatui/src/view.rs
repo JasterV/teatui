@@ -3,12 +3,18 @@ use ratatui::DefaultTerminal;
 use ratatui::widgets::Widget;
 use std::sync::mpsc::Receiver;
 
+#[derive(thiserror::Error, Debug)]
+pub enum ViewError {
+    #[error("Failed to render a widget into the terminal")]
+    RenderError(#[from] std::io::Error),
+}
+
 pub(crate) fn run<M, F, W>(
     mut model: M,
     mut terminal: DefaultTerminal,
     view_fn: F,
     rx: Receiver<M>,
-) -> Result<(), std::io::Error>
+) -> Result<(), ViewError>
 where
     W: Widget,
     F: Fn(&M) -> W,

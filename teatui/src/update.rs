@@ -12,7 +12,7 @@ pub enum Update<M, E> {
 }
 
 #[derive(thiserror::Error, Debug)]
-pub(crate) enum UpdateError<M, Eff>
+pub enum UpdateError<M, Eff>
 where
     Eff: Send + Sync + 'static,
 {

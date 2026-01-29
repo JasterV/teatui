@@ -33,6 +33,7 @@
 //! You can find a folder with example projects in the [examples](https://github.com/JasterV/teatui/tree/main/examples) folder.
 use ratatui::widgets::Widget;
 use std::fmt::Debug;
+use std::sync::mpsc::SendError;
 use std::{
     sync::mpsc::{Sender, channel},
     thread,
@@ -40,10 +41,32 @@ use std::{
 
 pub use update::Update;
 
+use crate::effects::EffectsError;
+use crate::events::EventLoopError;
+use crate::update::UpdateError;
+use crate::view::ViewError;
+
 mod effects;
 mod events;
 mod update;
 mod view;
+
+#[derive(thiserror::Error, Debug)]
+pub enum ProgramError<M, Msg, Eff>
+where
+    Eff: Send + Sync + 'static,
+{
+    #[error("The update process crashed: '{0}'")]
+    UpdateError(UpdateError<M, Eff>),
+    #[error("The effects process crashed: '{0}'")]
+    EffectsError(EffectsError<Msg>),
+    #[error("The view process crashed: '{0}'")]
+    ViewError(ViewError),
+    #[error("The event loop error crashed: '{0}'")]
+    EventLoopError(EventLoopError<Msg>),
+    #[error("Couldn't gracefully shutdown the program")]
+    GracefulShutdownError,
+}
 
 /// Starts the runtime which manages all the internal
 /// processes and message passing.
@@ -62,11 +85,11 @@ pub fn start<M, Msg, Eff, W, IF, UF, VF, EF>(
     update_fn: UF,
     view_fn: VF,
     effects_fn: EF,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>>
+) -> Result<(), ProgramError<M, Msg, Eff>>
 where
-    M: Clone + Debug + Send + Sync + 'static,
+    M: Clone + Send + Sync + 'static,
     Eff: Debug + Send + Sync + 'static,
-    Msg: From<crossterm::event::Event> + Debug + Sync + Send + 'static,
+    Msg: From<crossterm::event::Event> + Sync + Send + 'static,
     W: Widget,
     IF: Fn() -> (M, Option<Eff>) + Send + Sync + 'static,
     UF: Fn(M, Msg) -> Update<M, Eff> + Send + Sync + 'static,
@@ -78,7 +101,7 @@ where
     let (model, effect) = init_fn();
 
     // Channel for signaling when a task completes
-    let (shutdown_tx, shutdown_rx) = channel::<Result<(), _>>();
+    let (shutdown_tx, shutdown_rx) = channel::<Result<(), ProgramError<M, Msg, Eff>>>();
 
     // Channels for inter-thread communication
     let (update_tx, update_rx) = channel::<Msg>();
@@ -88,28 +111,48 @@ where
     // Spawn order is important.
     // If the view actor is started after the update actor, it could happen
     // that both actors have an out of sync version of the model for a bit.
-    //
-    let model_1 = model.clone();
-    spawn_thread(
-        || view::run(model_1, terminal, view_fn, view_rx).map_err(Box::from),
-        shutdown_tx.clone(),
-    );
+    thread::spawn({
+        let model = model.clone();
+        let shutdown_tx = shutdown_tx.clone();
 
-    spawn_thread(
-        || update::run(model, effect, update_fn, update_rx, view_tx, effects_tx).map_err(Box::from),
-        shutdown_tx.clone(),
-    );
+        move || {
+            let result = view::run(model, terminal, view_fn, view_rx)
+                .map_err(|err| ProgramError::ViewError(err));
 
-    let effects_update_tx = update_tx.clone();
-    spawn_thread(
-        || effects::run(effects_fn, effects_rx, effects_update_tx).map_err(Box::from),
-        shutdown_tx.clone(),
-    );
+            let _ = shutdown_tx.send(result);
+        }
+    });
 
-    spawn_thread(
-        || events::run(update_tx).map_err(Box::from),
-        shutdown_tx.clone(),
-    );
+    thread::spawn({
+        let shutdown_tx = shutdown_tx.clone();
+
+        move || {
+            let result = update::run(model, effect, update_fn, update_rx, view_tx, effects_tx)
+                .map_err(|err| ProgramError::UpdateError(err));
+
+            let _ = shutdown_tx.send(result);
+        }
+    });
+
+    thread::spawn({
+        let update_tx = update_tx.clone();
+        let shutdown_tx = shutdown_tx.clone();
+        move || {
+            let result = effects::run(effects_fn, effects_rx, update_tx)
+                .map_err(|err| ProgramError::EffectsError(err));
+
+            let _ = shutdown_tx.send(result);
+        }
+    });
+
+    thread::spawn({
+        let shutdown_tx = shutdown_tx.clone();
+
+        move || {
+            let result = events::run(update_tx).map_err(|err| ProgramError::EventLoopError(err));
+            let _ = shutdown_tx.send(result);
+        }
+    });
 
     let result = shutdown_rx.recv().ok();
 
@@ -117,20 +160,6 @@ where
 
     match result {
         Some(result) => result,
-        None => Ok(()),
+        None => Err(ProgramError::GracefulShutdownError),
     }
-}
-
-fn spawn_thread<F>(
-    callback: F,
-    shutdown: Sender<Result<(), Box<dyn std::error::Error + Send + Sync + 'static>>>,
-) -> thread::JoinHandle<()>
-where
-    F: FnOnce() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>>,
-    F: Send + 'static,
-{
-    thread::spawn(move || {
-        let result = callback();
-        let _ = shutdown.send(result);
-    })
 }
