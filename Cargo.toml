@@ -9,4 +9,4 @@ edition = "2024"
 
 [workspace.dependencies]
 crossterm = "0.29.0"
-ratatui = { version = "0.30", features = ["unstable-widget-ref"] }
+ratatui = { version = "0.30" }
