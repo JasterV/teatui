@@ -1,43 +1,54 @@
 //! Actor responsible of maintaining the state of the application.
-use color_eyre::{Report, Result};
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::mpsc::{Receiver, SendError, Sender};
 
 /// Tells the runtime what to do with the previous message.
 ///
 /// If `Update::Exit` is returned, the program will exit.
 ///
-/// If `Update::Next(M)` is returned, the view will be rendered with the new model.
-///
-/// If `Update::NextWithEffect` is returned, the view will be rendered with the new model and a side effect will be executed.
+/// If `Update::Next(M, Option<E>)` is returned, the view will be rendered with the new model and a side effect might be executed.
 pub enum Update<M, E> {
     Exit,
-    Next(M),
-    NextWithEffect(M, E),
+    Next(M, Option<E>),
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum UpdateError<M, Eff>
+where
+    Eff: Send + Sync + 'static,
+{
+    #[error("Failed to send message to effects handler process")]
+    EffectSend(#[from] SendError<(M, Eff)>),
+    #[error("Failed to send message to the view process")]
+    ViewSend(#[from] SendError<M>),
 }
 
 pub(crate) fn run<M, Msg, Eff, F>(
     mut model: M,
+    initial_effect: Option<Eff>,
     update_fn: F,
     rx: Receiver<Msg>,
     view_tx: Sender<M>,
     effects_tx: Sender<(M, Eff)>,
-) -> Result<()>
+) -> Result<(), UpdateError<M, Eff>>
 where
-    F: Fn(M, Msg) -> Result<Update<M, Eff>, Report>,
+    F: Fn(M, Msg) -> Update<M, Eff>,
     Eff: Sync + Send + 'static,
     M: Clone + Sync + Send + 'static,
 {
+    if let Some(effect) = initial_effect {
+        effects_tx.send((model.clone(), effect))?;
+    }
+
     loop {
         let Ok(msg) = rx.recv() else {
             return Ok(());
         };
 
-        let update = update_fn(model, msg)?;
+        let update = update_fn(model, msg);
 
         let (new_model, effect) = match update {
             Update::Exit => return Ok(()),
-            Update::Next(new_model) => (new_model, None),
-            Update::NextWithEffect(new_model, effect) => (new_model, Some(effect)),
+            Update::Next(new_model, effect) => (new_model, effect),
         };
 
         // Send the new model to the view

@@ -6,7 +6,6 @@ edition.workspace = true
 authors.workspace = true
 
 [dependencies]
-color-eyre.workspace = true
 crossterm.workspace = true
 ratatui.workspace = true
 teatui = { path = "../../teatui" }

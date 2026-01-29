@@ -1,16 +1,13 @@
-use color_eyre::Result;
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use ratatui::{
     style::Stylize,
     text::Line,
     widgets::{Block, Paragraph},
 };
-use teatui::{Update, View};
+use teatui::{ProgramError, update::Update};
 
-fn main() -> Result<()> {
-    color_eyre::install()?;
-    let result = teatui::start(Model::default(), update, view, run_effects);
-    result
+fn main() -> Result<(), ProgramError<Model, Message, Effect>> {
+    teatui::start(|| (Model::default(), None), update, view, run_effects)
 }
 
 /// Defines the state of the application
@@ -38,9 +35,11 @@ impl Model {
 }
 
 /// Possible side effects to execute
+#[derive(Debug)]
 pub enum Effect {}
 
 /// Messages that represent a change of state in the application
+#[derive(Debug)]
 pub enum Message {
     IncCounter,
     DecCounter,
@@ -93,23 +92,23 @@ impl From<crossterm::event::Event> for Message {
 ///
 /// Given the current state (model) and an incoming message from the outside world,
 /// return the next updated state
-pub fn update(model: Model, msg: Message) -> Result<Update<Model, Effect>> {
+pub fn update(model: Model, msg: Message) -> Update<Model, Effect> {
     match msg {
-        Message::Exit => Ok(Update::Exit),
-        Message::NoOp => Ok(Update::Next(model)),
-        Message::IncCounter => Ok(Update::Next(Model::increment_counter(model))),
-        Message::DecCounter => Ok(Update::Next(Model::decrement_counter(model))),
+        Message::Exit => Update::Exit,
+        Message::NoOp => Update::Next(model, None),
+        Message::IncCounter => Update::Next(Model::increment_counter(model), None),
+        Message::DecCounter => Update::Next(Model::decrement_counter(model), None),
     }
 }
 
-pub fn run_effects(_model: &Model, _effect: Effect) -> Result<Option<Message>> {
-    Ok(None)
+pub fn run_effects(_model: &Model, _effect: Effect) -> Option<Message> {
+    None
 }
 
 /// Elm-like View function.
 ///
 /// Given the current state (read-only), return a drawable widget.
-pub fn view(model: &Model) -> Result<View> {
+pub fn view(model: &Model) -> Paragraph<'static> {
     let counter = model.counter;
 
     let title = Line::from("Ratatui Actor-based Counter")
@@ -125,9 +124,7 @@ Counter: {counter}
 Press `Esc`, `Ctrl-C` or `q` to stop running."#
     );
 
-    let widget = Paragraph::new(text)
+    Paragraph::new(text)
         .block(Block::bordered().title(title))
-        .centered();
-
-    Ok(View::new(widget))
+        .centered()
 }
