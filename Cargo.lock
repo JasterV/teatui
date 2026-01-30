@@ -1161,8 +1161,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "tabs"
+version = "0.0.0"
+dependencies = [
+ "crossterm",
+ "ratatui",
+ "strum",
+ "teatui",
+]
+
+[[package]]
 name = "teatui"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "crossterm",
  "ratatui",
