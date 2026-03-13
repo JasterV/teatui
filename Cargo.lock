@@ -869,7 +869,7 @@ dependencies = [
  "itertools",
  "kasuari",
  "lru",
- "strum",
+ "strum 0.27.2",
  "thiserror 2.0.18",
  "unicode-segmentation",
  "unicode-truncate",
@@ -921,7 +921,7 @@ dependencies = [
  "itertools",
  "line-clipping",
  "ratatui-core",
- "strum",
+ "strum 0.27.2",
  "time",
  "unicode-segmentation",
  "unicode-width",
@@ -1127,6 +1127,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "strum"
+version = "0.28.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9628de9b8791db39ceda2b119bbe13134770b56c138ec1d3af810d045c04f9bd"
+
+[[package]]
 name = "strum_macros"
 version = "0.27.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1166,7 +1172,7 @@ version = "0.0.0"
 dependencies = [
  "crossterm",
  "ratatui",
- "strum",
+ "strum 0.28.0",
  "teatui",
 ]
 
@@ -1310,7 +1316,7 @@ version = "0.0.0"
 dependencies = [
  "crossterm",
  "ratatui",
- "strum",
+ "strum 0.28.0",
  "teatui",
 ]
 
